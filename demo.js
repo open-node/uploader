@@ -2502,12 +2502,16 @@ const main = async () => {
     "X-Auth-AppId": "i03n111cgy"
   };
   const uploader = new Uploader(axios, "/api_v1/app/files/slices", headers);
-  uploader.changeOpt("chunkSize", 10 * 1024);
+  uploader.changeOpt("chunkSize", 2 * 1024 * 1024);
 
   const input = document.getElementById("myfile");
-  input.onchange = e => {
+  input.onchange = async e => {
     console.log(e);
-    uploader.upload(e.target.files[0], console.log.bind(console, "Process changed log"));
+    const file = await uploader.upload(
+      e.target.files[0],
+      console.log.bind(console, "Progress changed log")
+    );
+    console.log("Upload file success: %o", file);
   };
 };
 
@@ -2529,7 +2533,7 @@ const DEFAULT_OPT = Object.freeze({
     if (state) {
       localStorage.setItem(saveKey(hash), Array.from(state).join(","));
     } else {
-      localStorage.remoteItem(saveKey(hash));
+      localStorage.removeItem(saveKey(hash));
     }
   }
 });
@@ -2593,15 +2597,30 @@ function Uploader(axios, url, headers) {
    */
   const upload = async (file, changed) => {
     const hash = await md5(file);
-    console.log("file hash is: %s", hash);
     const completed = new Set(opt.getState(hash));
     const length = Math.ceil(file.size / opt.chunkSize);
-    console.log("chunk total: %d", length);
     const requests = [];
+    let loaded = 0;
+    const progress = Array(length).fill(0);
+    const onUploadProgress = (i, e) => {
+      loaded -= progress[i];
+      loaded += e.loaded;
+      progress[i] = e.loaded;
+      changed(Math.floor((loaded * 100) / file.size));
+      if (e.loaded === e.total) {
+        completed.add(i);
+        opt.setState(hash, completed);
+      }
+    };
     for (let i = 0; i < length; i += 1) {
       // 已经完成的分片直接跳过
       if (completed.has(i)) continue;
       // 利用axios.post 方法上传
+      const option = {
+        headers,
+        onUploadProgress: onUploadProgress.bind(null, i)
+      };
+
       const form = new FormData();
       const start = i * opt.chunkSize;
       const end = Math.min(file.size, start + opt.chunkSize);
@@ -2610,13 +2629,6 @@ function Uploader(axios, url, headers) {
       form.append("total", length);
       form.append("hash", hash);
       form.append("size", file.size);
-      const option = {
-        headers,
-        onUploadProgress(e) {
-          console.log(length, i, e, file);
-          changed(e);
-        }
-      };
       requests.push(axios.put(url, form, option));
     }
 

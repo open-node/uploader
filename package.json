@@ -5,7 +5,7 @@
   "main": "./src/uploader.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "readme": "d=`head -n 15 README.md` && (echo \"$d\n\n\n\" && documentation build src/** -f md) > README.md",
+    "readme": "d=`head -n 35 README.md` && (echo \"$d\n\n\n\" && documentation build src/** -f md) > README.md",
     "release": "npm run readme && npm publish --registry=https://registry.npmjs.org --access=public",
     "release:github": "npm run readme && npm publish --registry=https://npm.pkg.github.com/",
     "build:demo": "browserify src/demo.js > demo.js"

@@ -10,9 +10,13 @@ const main = async () => {
   uploader.changeOpt("chunkSize", 2 * 1024 * 1024);
 
   const input = document.getElementById("myfile");
-  input.onchange = e => {
+  input.onchange = async e => {
     console.log(e);
-    uploader.upload(e.target.files[0], console.log.bind(console, "Process changed log"));
+    const file = await uploader.upload(
+      e.target.files[0],
+      console.log.bind(console, "Progress changed log")
+    );
+    console.log("Upload file success: %o", file);
   };
 };
 
