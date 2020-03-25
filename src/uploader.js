@@ -51,7 +51,7 @@ function Uploader(axios, url, token) {
     const loadNext = () => {
       const start = current * opt.chunkSize;
       const end = Math.min(file.size, start + opt.chunkSize);
-      reader.readAsArrayBuffer(start, end);
+      reader.readAsArrayBuffer(file.slice(start, end));
     };
     return new Promise((resolve, reject) => {
       reader.onload = e => {
@@ -65,6 +65,8 @@ function Uploader(axios, url, token) {
       };
 
       reader.onerror = reject;
+      // 启动读取
+      loadNext();
     });
   };
 
@@ -79,8 +81,10 @@ function Uploader(axios, url, token) {
    */
   const upload = async (file, changed) => {
     const hash = await md5(file);
+    console.log("file hash is: %s", hash);
     const completed = new Set(opt.getState(hash));
     const length = Math.ceil(file.size / opt.chunkSize);
+    console.log("chunk total: %d", length);
     const requests = [];
     for (let i = 0; i < length; i += 1) {
       // 已经完成的分片直接跳过
@@ -90,9 +94,10 @@ function Uploader(axios, url, token) {
       const start = i * opt.chunkSize;
       const end = Math.min(file.size, start + opt.chunkSize);
       form.append("file", file.slice(start, end));
-      form.append("name", file.name);
+      form.append("index", i);
       form.append("total", length);
       form.append("hash", hash);
+      form.append("size", file.size);
       const option = {
         headers,
         onUploadProgress(e) {
@@ -100,11 +105,17 @@ function Uploader(axios, url, token) {
           changed(e);
         }
       };
-      requests.push(axios.post(url, form, option));
+      requests.push(axios.put(url, form, option));
     }
 
     await axios.all(requests);
-    const { data } = await axios.put(url, { hash }, { headers });
+    const body = {
+      hash,
+      size: file.size,
+      total: length,
+      name: file.name
+    };
+    const { data } = await axios.post(url, body, { headers });
     opt.setState(hash); // 删除本地分片上传记录, 因为已经完成，这些记录没有意义了。
     return data;
   };

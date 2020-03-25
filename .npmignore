@@ -11,6 +11,7 @@ build
 test
 test/*
 docs
+demo.js
 docs/*
 npm-debug.log
 coverage
