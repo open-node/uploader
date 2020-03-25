@@ -27,12 +27,8 @@ const DEFAULT_OPT = Object.freeze({
  * @class
  * @return {Uploader} Instance
  */
-function Uploader(axios, url, token) {
+function Uploader(axios, url, headers) {
   const opt = Object.assign({}, DEFAULT_OPT);
-
-  const headers = {
-    "X-Auth-Token": token
-  };
 
   /**
    * 计算文件MD5值
@@ -131,7 +127,7 @@ function Uploader(axios, url, token) {
    */
   const changeOpt = (key, value) => {
     if (!Object.hasOwnProperty.call(opt, key)) throw Error(`Not found the opt item: ${key}`);
-    if (typeof opt(key) !== typeof value)
+    if (typeof opt[key] !== typeof value)
       throw Error(`Type error, opt item: ${key} type is ${typeof opt[key]}`);
     opt[key] = value;
   };

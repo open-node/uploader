@@ -2497,7 +2497,12 @@ const axios = require("axios");
 const Uploader = require("./uploader");
 
 const main = async () => {
-  const uploader = new Uploader(axios, "/api_v1/users/203453/files", "thisisatoken");
+  const headers = {
+    "X-Auth-Token": "thisisatoken",
+    "X-Auth-AppId": "i03n111cgy"
+  };
+  const uploader = new Uploader(axios, "/api_v1/app/files/slices", headers);
+  uploader.changeOpt("chunkSize", 10 * 1024);
 
   const input = document.getElementById("myfile");
   input.onchange = e => {
@@ -2538,12 +2543,8 @@ const DEFAULT_OPT = Object.freeze({
  * @class
  * @return {Uploader} Instance
  */
-function Uploader(axios, url, token) {
+function Uploader(axios, url, headers) {
   const opt = Object.assign({}, DEFAULT_OPT);
-
-  const headers = {
-    "X-Auth-Token": token
-  };
 
   /**
    * 计算文件MD5值
@@ -2606,7 +2607,6 @@ function Uploader(axios, url, token) {
       const end = Math.min(file.size, start + opt.chunkSize);
       form.append("file", file.slice(start, end));
       form.append("index", i);
-      form.append("name", file.name);
       form.append("total", length);
       form.append("hash", hash);
       form.append("size", file.size);
@@ -2617,11 +2617,17 @@ function Uploader(axios, url, token) {
           changed(e);
         }
       };
-      requests.push(axios.post(url, form, option));
+      requests.push(axios.put(url, form, option));
     }
 
     await axios.all(requests);
-    const { data } = await axios.put(url, { hash }, { headers });
+    const body = {
+      hash,
+      size: file.size,
+      total: length,
+      name: file.name
+    };
+    const { data } = await axios.post(url, body, { headers });
     opt.setState(hash); // 删除本地分片上传记录, 因为已经完成，这些记录没有意义了。
     return data;
   };
@@ -2637,7 +2643,7 @@ function Uploader(axios, url, token) {
    */
   const changeOpt = (key, value) => {
     if (!Object.hasOwnProperty.call(opt, key)) throw Error(`Not found the opt item: ${key}`);
-    if (typeof opt(key) !== typeof value)
+    if (typeof opt[key] !== typeof value)
       throw Error(`Type error, opt item: ${key} type is ${typeof opt[key]}`);
     opt[key] = value;
   };
