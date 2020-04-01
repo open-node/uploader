@@ -1,6 +1,6 @@
 {
   "name": "@open-node/uploader",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Huge file upload by chunk",
   "main": "./src/uploader.js",
   "scripts": {
