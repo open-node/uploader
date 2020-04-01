@@ -1,7 +1,7 @@
 # @open-node/uploader
 大文件分片上传，客户端SDK
 
-<pre>npm i @open-node/upload --save</pre>
+<pre>npm i @open-node/uploader --save</pre>
 
 ## Usage
 
